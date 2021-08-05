@@ -18,9 +18,8 @@ function Greeting({initialName = ''}) {
   const [name, setName] = useLocalStorageState('name', initialName);
 
   function handleChange(event) {
-    setName(event.target.value);
+    setName(event.target.value)
   }
-
   return (
     <div>
       <form>
