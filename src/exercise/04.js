@@ -4,39 +4,15 @@
 import * as React from 'react'
 import { useLocalStorageState } from '../utils';
 
-function Board() {
-  const [squares, setSquares] = useLocalStorageState(
-    'squares',
-    Array(9).fill(null)
-  );
-
-  React.useEffect(() => {
-    window.localStorage.setItem('squares', JSON.stringify(squares))
-  }, [squares]);
-
-  const nextValue = calculateNextValue(squares);
-  const winner = calculateWinner(squares);
-  const status = calculateStatus(winner, squares, nextValue);
-
-  // This is the function your square click handler will call. `square` should
-  // be an index. So if they click the center square, this will be `4`.
-  function selectSquare(square) {
-    if (winner || squares[square]) {
-      return;
-    }
-
-    const squaresCopy = [...squares];
-    squaresCopy[square] = nextValue;
-    setSquares(squaresCopy);
-  }
-
-  function restart() {
-    setSquares(Array(9).fill(null));
-  }
+function Board(props) {
+  const {
+    onClick,
+    squares,
+  } = props;
 
   function renderSquare(i) {
     return (
-      <button className="square" onClick={() => selectSquare(i)}>
+      <button className="square" onClick={() => onClick(i)}>
         {squares[i]}
       </button>
     )
@@ -44,7 +20,6 @@ function Board() {
 
   return (
     <div>
-      <div className="status">{status}</div>
       <div className="board-row">
         {renderSquare(0)}
         {renderSquare(1)}
@@ -60,18 +35,69 @@ function Board() {
         {renderSquare(7)}
         {renderSquare(8)}
       </div>
-      <button className="restart" onClick={restart}>
-        restart
-      </button>
     </div>
   )
 }
 
 function Game() {
+  const [history, setHistory] = useLocalStorageState(
+    'tic-tac-toe:history',
+    [Array(9).fill(null)]
+  );
+
+  const [currentStep, setCurrentStep] = useLocalStorageState(
+    'tic-tac-toe:step',
+    0,
+  );
+
+  const currentSquares = history[currentStep];
+  const nextValue = calculateNextValue(currentSquares);
+  const winner = calculateWinner(currentSquares);
+  const status = calculateStatus(winner, currentSquares, nextValue);
+
+  function selectSquare(square) {
+    if (winner || currentSquares[square]) {
+      return;
+    }
+
+    const newHistory = history.slice(0, currentStep + 1);
+    const squares = [...currentSquares];
+    squares[square] = nextValue;
+    setHistory([...newHistory, squares]);
+    setCurrentStep(currentStep + 1);
+  }
+
+  const moves = history.map((stepSquares, i) => {
+    const buttonText = (i === 0) ? 'Go to game start' : `Go to move #${i}`;
+    const isCurrentStep = i === currentStep;
+    return (
+      <li key={i}>
+        <button
+          onClick={() => setCurrentStep(i)}
+          disabled={isCurrentStep}
+        >
+          {buttonText} {isCurrentStep ? '(current)' : ''}
+        </button>
+      </li>
+    );
+  });
+
+  function restart() {
+    setHistory([Array(9).fill(null)]);
+    setCurrentStep(0);
+  }
+
   return (
     <div className="game">
       <div className="game-board">
-        <Board />
+        <Board onClick={selectSquare} squares={currentSquares} />
+        <button className="restart" onClick={restart}>
+          restart
+        </button>
+      </div>
+      <div className="game-info">
+        <div>{status}</div>
+        <ol>{moves}</ol>
       </div>
     </div>
   )
